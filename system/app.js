@@ -14,27 +14,18 @@ console.log("app.js loaded", {
 ========================= */
 
 async function callGemini(prompt) {
-    try {
-        const res = await fetch("/api/gemini", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ prompt })
-        });
+    console.log("sending prompt:", prompt);
+    const res = await fetch("/api/gemini", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ prompt })
+    });
 
-        const data = await res.json();
+    const data = await res.json();
 
-        console.log("API response:", data);
-
-        return (
-            data?.candidates?.[0]?.content?.parts?.[0]?.text
-            || data?.text
-            || ""
-        );
-
-    } catch (err) {
-        console.error("callGemini error:", err);
-        return "";
-    }
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
 /* =========================
