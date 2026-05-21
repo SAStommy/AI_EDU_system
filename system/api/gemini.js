@@ -5,20 +5,24 @@ const client = new GoogleGenAI({
 });
 
 export default async function handler(req, res) {
-    try {
-        if (req.method !== "POST") {
-            return res.status(405).json({ error: "Method not allowed" });
-        }
+    // ⚠️ Vercel 會自動處理 JSON，但你最好保護一下
+    if (req.method !== "POST") {
+        return res.status(405).json({ error: "Method not allowed" });
+    }
 
-        const body = req.body || {};
+    try {
+        const body = req.body;
 
         const prompt =
             typeof body === "string"
                 ? body
-                : body.prompt;
+                : body?.prompt;
 
         if (!prompt) {
-            return res.status(400).json({ error: "Missing prompt" });
+            return res.status(400).json({
+                error: "Missing prompt",
+                debug: body
+            });
         }
 
         const result = await client.models.generateContent({
@@ -28,21 +32,19 @@ export default async function handler(req, res) {
                     role: "user",
                     parts: [{ text: prompt }]
                 }
-            ],
-            generationConfig: {
-                responseMimeType: "application/json"
-            }
+            ]
         });
 
         return res.status(200).json({
-            text: result.text
+            text: result.text ?? ""
         });
 
     } catch (err) {
-        console.error(err);
+        console.error("Gemini error:", err);
 
         return res.status(500).json({
-            error: err.message
+            error: "Gemini failed",
+            detail: err.message
         });
     }
 }
