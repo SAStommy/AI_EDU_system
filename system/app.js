@@ -547,12 +547,11 @@ You MUST follow ALL rules:
     }
 }
 
-async function addFollowUp(q, wrongChoice=null){
-const prompt = `
+async function addFollowUp(q, wrongChoice = null) {
+    const prompt = `
 你是專業英語教學AI（診斷型適性學習系統）。
 
 # 📌 已知資訊
-
 介系詞概念特徵：
 ${q.feature}
 
@@ -566,88 +565,116 @@ ${q.answer}
 
 # 🧠 任務目標
 
-請根據學生「剛剛的錯誤」，再生成2題：
-👉 相同概念
-👉 不同情境
-👉 用來確認是否修正錯誤概念
+請根據學生剛剛的錯誤，生成 2 題 follow-up：
 
-第1題會給予提示來訓練，第2題不給提示，來確認學生是否真正理解。
+1. 第1題（hint）→ 有提示
+2. 第2題（test）→ 無提示
+
+👉 兩題必須：
+- 相同語言概念
+- 不同情境
+- 用來測是否真正修正 misconception
 
 ---
 
-# 🎯 出題要求
+# 🎯 出題規則
 
 1. 不能改變語言概念
-2. 必須增加錯誤選項干擾性
-3. 情境改變但結構不變
+2. 情境要不同，但結構一致
+3. 干擾選項要提高迷惑性
 4. 必須針對同一 misconception
-5. 2題必須作出區別，你可以透過打亂選項順序或不同介系詞選擇來實現
-6. 3題(2題新題 + 1題原題)間內容必須互不相同
-7. 第一題在正確答案的分數固定為1.0，其它同原題，第二題的給分分數完全依照錯誤原題 
-8. 第一題會給予提示所以json的type是"hint"，第二題不給提示所以type是"test"
-
-錯誤題目的資料
-${JSON.stringify(q)}
+5. 兩題不可重複
+6. hint 題 type = "hint"
+7. test 題 type = "test"
+8. hint 題 correct score 固定 1.0
 
 ---
 
 # 📌 feature 規則
-
-維持原 feature，不要改
+維持原 feature，不可修改
 
 ---
 
-# 🧾 輸出格式（只能 JSON，合計2題）
+# 🧾 輸出格式（⚠️ 必須是 JSON ARRAY）
 
-{
-  "index": 0,
-  "Question": "英文題目",
-  "Translation": "中文翻譯",
-  "feature": "${q.feature}",
-  "type": "hint" || "test",
+[
+  {
+    "index": 0,
+    "Question": "英文題目",
+    "Translation": "中文翻譯",
+    "feature": "${q.feature}",
+    "type": "hint",
 
-  "A": "at",
-  "B": "on",
-  "C": "in",
-  "D": "to",
+    "A": "at",
+    "B": "on",
+    "C": "in",
+    "D": "to",
 
-  "answer": "A",
+    "answer": "A",
 
-  "A_score": number,
-  "B_score": number,
-  "C_score": number,
-  "D_score": number,
+    "A_score": number,
+    "B_score": number,
+    "C_score": number,
+    "D_score": number,
 
-  "explanation": {
-    "A": "針對選A的理解說明（含對錯）",
-    "B": "為什麼選B會錯",
-    "C": "為什麼選C會錯",
-    "D": "為什麼選D會錯"
+    "explanation": {
+      "A": "針對A的說明",
+      "B": "為什麼B錯",
+      "C": "為什麼C錯",
+      "D": "為什麼D錯"
+    }
+  },
+  {
+    "index": 1,
+    "Question": "英文題目",
+    "Translation": "中文翻譯",
+    "feature": "${q.feature}",
+    "type": "test",
+
+    "A": "at",
+    "B": "on",
+    "C": "in",
+    "D": "to",
+
+    "answer": "A",
+
+    "A_score": number,
+    "B_score": number,
+    "C_score": number,
+    "D_score": number,
+
+    "explanation": {
+      "A": "針對A的說明",
+      "B": "為什麼B錯",
+      "C": "為什麼C錯",
+      "D": "為什麼C錯"
+    }
   }
-}
+]
 `;
 
     const raw = await callGemini(prompt);
+
+    console.log("follow-up raw:", raw);
+
     const data = safeParseJSON(raw);
 
-    if (!data) {
-        console.warn("follow-up failed:", q.feature);
+    if (!Array.isArray(data) || data.length === 0) {
+        console.warn("follow-up failed:", q.feature, data);
         return;
     }
 
-    // =========================
-    // 🔧 normalize 回傳格式
-    // =========================
+    data.forEach((qItem, i) => {
+        if (!qItem?.Question || !qItem?.answer) return;
 
-    const qItem = Array.isArray(data) ? data[0] : data;
+        qItem.index = questions.length + i + 1;
+        qItem.isFollowUp = true;
+        qItem.parentIndex = index;
 
-    if (!qItem || !qItem.Question || !qItem.answer) return;
+        questions.push(qItem);
+    });
 
-    qItem.index = questions.length + 1;
-    qItem.isFollowUp = true;
-    qItem.parentIndex = index;
-
-    questions.push(qItem);
+    console.log("follow-up added:", data.length);
 }
 
 /* =========================
