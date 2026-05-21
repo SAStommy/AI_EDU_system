@@ -38,26 +38,18 @@ async function initGenAI() {
 }
 
 async function callGemini(prompt) {
-    try {
-        const client = await initGenAI();
 
-        const result = await client.models.generateContent({
-            model: "gemini-2.5-flash",
-            contents: [{
-                role: "user",
-                parts: [{ text: prompt }]
-            }],
-            generationConfig: {
-                responseMimeType:
-                    "application/json"
-            }
-        });
+    const res = await fetch("/api/gemini", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ prompt })
+    });
 
-        return result.text || "";
-    } catch (e) {
-        console.error("Gemini error:", e);
-        return "";
-    }
+    const data = await res.json();
+
+    return data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
 /* =========================
