@@ -1,28 +1,24 @@
 import { GoogleGenAI } from "@google/genai";
 
 const client = new GoogleGenAI({
-    apiKey: process.env.API_KEY
+    apiKey: process.env.GEMINI_API_KEY
 });
 
 export default async function handler(req, res) {
-    /*if (req.method !== "POST") {
-        return res.status(405).json({ error: "Method not allowed" });
-    }*/
-
     try {
-        // ⭐ 支援 JSON + raw string
-        let prompt = "";
-
-        if (typeof req.body === "string") {
-            prompt = req.body; // raw string
-        } else if (req.body?.prompt) {
-            prompt = req.body.prompt;
+        if (req.method !== "POST") {
+            return res.status(405).json({ error: "Method not allowed" });
         }
 
+        const body = req.body || {};
+
+        const prompt =
+            typeof body === "string"
+                ? body
+                : body.prompt;
+
         if (!prompt) {
-            return res.status(400).json({
-                error: "Missing prompt"
-            });
+            return res.status(400).json({ error: "Missing prompt" });
         }
 
         const result = await client.models.generateContent({
@@ -46,8 +42,7 @@ export default async function handler(req, res) {
         console.error(err);
 
         return res.status(500).json({
-            error: "Gemini failed",
-            detail: err.message
+            error: err.message
         });
     }
 }

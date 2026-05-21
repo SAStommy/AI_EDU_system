@@ -15,8 +15,9 @@ console.log("app.js loaded", {
 
 async function callGemini(prompt) {
     console.log("sending prompt:", prompt);
+
     const res = await fetch("/api/gemini", {
-        method: "post",
+        method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
@@ -25,7 +26,9 @@ async function callGemini(prompt) {
 
     const data = await res.json();
 
-    return data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+    console.log("API response:", data);
+
+    return data?.text || "";
 }
 
 /* =========================
