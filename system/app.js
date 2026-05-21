@@ -1,5 +1,3 @@
-let genAI = null;
-
 /* =========================
    1. Config
 ========================= */
@@ -15,36 +13,28 @@ console.log("app.js loaded", {
    2. Gemini
 ========================= */
 
-async function initGenAI() {
-    if (genAI) return genAI;
-
+async function callGemini(prompt) {
     try {
-        const module = await import("@google/genai");
-
-        genAI = new module.GoogleGenAI({
-            apiKey: API_KEY
+        const res = await fetch("/api/gemini", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ prompt })
         });
 
-        return genAI;
-    } catch (e) {
-        console.error("Gemini SDK error:", e);
-        throw e;
+        const data = await res.json();
+
+        console.log("API response:", data);
+
+        return (
+            data?.candidates?.[0]?.content?.parts?.[0]?.text
+            || data?.text
+            || ""
+        );
+
+    } catch (err) {
+        console.error("callGemini error:", err);
+        return "";
     }
-}
-
-async function callGemini(prompt) {
-
-    const res = await fetch("/api/gemini", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ prompt })
-    });
-
-    const data = await res.json();
-
-    return data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
 }
 
 /* =========================
