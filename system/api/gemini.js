@@ -1,21 +1,40 @@
-import { GoogleGenAI } from "@google/genai";
-
 export default async function handler(req, res) {
-    const { prompt } = req.body;
+    try {
+        const { prompt } = req.body || {};
 
-    const client = new GoogleGenAI({
-        apiKey: process.env.GEMINI_API_KEY
-    });
+        if (!prompt) {
+            return res.status(400).json({ error: "Missing prompt" });
+        }
 
-    const result = await client.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [{
-            role: "user",
-            parts: [{ text: prompt }]
-        }]
-    });
+        const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`,
+            {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    contents: [
+                        {
+                            role: "user",
+                            parts: [{ text: prompt }]
+                        }
+                    ]
+                })
+            }
+        );
 
-    res.status(200).json({
-        text: result.text
-    });
+        const data = await response.json();
+
+        const text =
+            data?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+
+        return res.status(200).json({ text });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            error: err.message
+        });
+    }
 }
