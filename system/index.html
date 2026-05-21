@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧型英語介詞教學系統</title>
+
+    <!-- Bootstrap -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    >
+
+    <!-- Import Map -->
+    <script type="importmap">
+    {
+        "imports": {
+            "@google/genai": "https://esm.run/@google/genai"
+        }
+    }
+    </script>
+
+    <style>
+        .option-btn {
+            min-height: 80px;
+            transition: all 0.2s;
+        }
+
+        .option-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .pre-grid-input,
+        .post-grid-input {
+            width: 60px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body class="bg-light">
+
+<div class="container my-5" id="app-container">
+
+    <!-- 首頁 -->
+    <section id="page-home" class="page card shadow-sm p-5 text-center">
+
+        <h1 class="mb-4">
+            智慧型英語介詞教學系統
+        </h1>
+
+        <p class="lead">
+            本系統將透過凱利方格（Kelly Grid）分析您的介詞邏輯，
+            並由 AI 為您客製化學習路徑。
+        </p>
+
+        <button
+            id="btn-start"
+            class="btn btn-primary btn-lg mt-3"
+        >
+            開始實驗
+        </button>
+
+    </section>
+
+    <!-- 前測 -->
+    <section
+        id="page-pre-test"
+        class="page card shadow-sm p-4 d-none"
+    >
+
+        <h2 class="mb-4">
+            前測：英語介詞認知方格
+        </h2>
+
+        <p class="text-muted">
+            請根據理解打分（1 為極端左側，5 為極端右側）
+        </p>
+
+        <div class="table-responsive">
+            <table class="table table-bordered text-center align-middle">
+
+                <thead class="table-dark">
+                    <tr>
+                        <th>構念區間 (1 - 5)</th>
+                        <th>AT</th>
+                        <th>ON</th>
+                        <th>IN</th>
+                        <th>TO</th>
+                        <th>FOR</th>
+                    </tr>
+                </thead>
+
+                <tbody id="preTestGridBody"></tbody>
+
+            </table>
+        </div>
+
+        <div class="text-end mt-3">
+            <button
+                id="btn-submit-pretest"
+                class="btn btn-primary"
+            >
+                提交並分析邏輯
+            </button>
+        </div>
+
+    </section>
+
+    <!-- AI 教學 -->
+    <section
+        id="page-knowledge"
+        class="page card shadow-sm p-4 d-none text-center"
+    >
+
+        <h2>
+            介詞基礎概念教學
+        </h2>
+
+        <div class="text-start my-4 p-4 bg-white border rounded">
+
+            <div class="row">
+
+                <div class="col-md-6">
+                    <p><strong>AT</strong>：具體點（Time / Point）</p>
+                    <p><strong>ON</strong>：特定日／表面（Day / Surface）</p>
+                    <p><strong>IN</strong>：長時段／空間內（Period / Container）</p>
+                </div>
+
+                <div class="col-md-6">
+                    <p><strong>TO</strong>：方向／移動（Direction）</p>
+                    <p><strong>FOR</strong>：目的／持續（Purpose / Duration）</p>
+                </div>
+
+            </div>
+
+        </div>
+
+        <div id="loading-section" class="mt-4">
+
+            <div
+                class="spinner-border text-primary"
+                role="status"
+            ></div>
+
+            <p class="mt-2 text-muted">
+                Gemini 正在分析您的差異矩陣並生成題庫...
+            </p>
+
+        </div>
+
+        <!--<button
+            id="btn-start-mc"
+            class="btn btn-success d-none mt-3"
+        >
+            開始適性練習
+        </button>-->
+
+    </section>
+
+    <!-- 測驗 -->
+    <section
+        id="page-mc"
+        class="page card shadow-sm p-4 d-none"
+    >
+
+        <div class="d-flex justify-content-between align-items-center mb-3">
+
+            <h3 class="mb-0">
+                智慧適性練習
+            </h3>
+
+            <span
+                id="score-info"
+                class="badge bg-dark fs-6"
+            >
+                進度：0 / 0
+            </span>
+
+        </div>
+
+        <div class="progress mb-4" style="height:25px;">
+
+            <div
+                id="student-progress-bar"
+                class="progress-bar progress-bar-striped progress-bar-animated bg-success"
+                style="width:0%;"
+            >
+                0%
+            </div>
+
+        </div>
+
+        <div class="border p-4 rounded bg-white shadow-sm">
+
+            <div id="question-text" class="mb-4"></div>
+
+            <div
+                id="options-container"
+                class="row g-3"
+            ></div>
+
+        </div>
+
+        <div
+            id="explanation-container"
+            class="alert mt-4 d-none"
+        >
+
+            <h5 id="explanation-title"></h5>
+
+            <hr>
+
+            <p id="explanation-text"></p>
+
+            <div class="text-end mt-3">
+                <button
+                    id="btn-next-question"
+                    class="btn btn-primary"
+                >
+                    下一題
+                </button>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- 後測 -->
+    <section
+        id="page-post-test"
+        class="page card shadow-sm p-4 d-none"
+    >
+
+        <h2 class="mb-4">
+            完成學習！進行後測
+        </h2>
+
+        <div class="table-responsive">
+
+            <table class="table table-bordered text-center align-middle">
+
+                <thead class="table-success">
+                    <tr>
+                        <th>構念區間 (1 - 5)</th>
+                        <th>AT</th>
+                        <th>ON</th>
+                        <th>IN</th>
+                        <th>TO</th>
+                        <th>FOR</th>
+                    </tr>
+                </thead>
+
+                <tbody id="postTestGridBody"></tbody>
+
+            </table>
+
+        </div>
+
+        <div class="text-end mt-3">
+            <button
+                id="btn-finish"
+                class="btn btn-success"
+            >
+                完成實驗
+            </button>
+        </div>
+
+    </section>
+
+</div>
+
+<!-- App -->
+<script type="module" src="./app.js"></script>
+
+</body>
+</html>
