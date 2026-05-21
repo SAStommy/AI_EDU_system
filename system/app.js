@@ -3,17 +3,12 @@ let genAI = null;
 /* =========================
    1. Config
 ========================= */
-
-const API_KEY = "AI_KEY";
-const GOOGLE_SCRIPT_URL = "DB_KEY";
-
 const sessionId =
     window.sessionId ||
     crypto.randomUUID();
 
 console.log("app.js loaded", {
     sessionId,
-    GOOGLE_SCRIPT_URL
 });
 
 /* =========================
@@ -315,23 +310,15 @@ async function submitPreTest() {
     totalPossibleScore = initialDistance;
     earnedScore = 0;
 
-    await fetch(
-        GOOGLE_SCRIPT_URL,
-        {
-            method: "POST",
-            mode: "no-cors",
-            headers: {
-                "Content-Type": "text/plain"
-            },
-            body: JSON.stringify({
-                action: "create",
-                session_id:
-                    sessionId,
-                pre_score:
-                    initialDistance
-            })
-        }
-    );
+    await fetch("/api/db", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            action: "create",
+            session_id: sessionId,
+            pre_score: initialDistance
+        })
+    });
 
     navigate("knowledge");
 
@@ -910,23 +897,15 @@ async function finishExperiment(){
     const postScore =
         sum(postDiff);
 
-    await fetch(
-        GOOGLE_SCRIPT_URL,
-        {
-            method: "POST",
-            mode: "no-cors",
-            headers: {
-                "Content-Type": "text/plain"
-            },
-            body: JSON.stringify({
-                action: "update",
-                session_id:
-                    sessionId,
-                post_score:
-                    postScore
-            })
-        }
-    );
+    await fetch("/api/db", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            action: "update",
+            session_id: sessionId,
+            post_score: postScore
+        })
+    });
 
     alert(
         "你學會了介系詞（已同步 Google Sheet）"
