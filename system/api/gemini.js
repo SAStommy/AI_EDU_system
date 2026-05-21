@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai";
 
 const client = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY
+    apiKey: process.env.API_KEY
 });
 
 export default async function handler(req, res) {
