@@ -2,9 +2,9 @@ import { GoogleGenAI } from "@google/genai";
 
 export default async function handler(req, res) {
     // ❗只允許 POST
-    if (req.method !== "POST") {
+    /*if (req.method !== "POST") {
         return res.status(405).json({ error: "Method not allowed" });
-    }
+    }*/
 
     try {
         const { prompt } = req.body;
