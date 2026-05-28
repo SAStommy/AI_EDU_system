@@ -384,14 +384,10 @@ async function submitPreTest() {
    9. Prompt 保持原樣
 ========================= */
 
-async function generateQuestions(){
-    
-    try {
-        document.getElementById("loading-section")?.classList.remove("d-none");
+async function generateQuestions() {
+    const limit = initialDistance;
 
-        const limit = initialDistance; // 根據錯誤程度調整題量，最多{initialDistance}題
-
-        const prompt = `
+    const prompt = `
         你是專業英語教學AI（Diagnostic Adaptive Tutor）。
 
         # 📊 INPUT DATA
@@ -526,132 +522,65 @@ async function generateQuestions(){
         6. 正確答案需平均分布在A/B/C/D
         `;
 
+    console.log("===== Prompt =====");
+    console.log(prompt);
+
+    document.getElementById("loading-section")?.classList.remove("d-none");
+
+    try {
         const raw = await callGemini(prompt);
 
+        console.log("📦 RAW FROM GEMINI:");
+        console.log(raw);
+
         if (!raw) {
-            alert("AI 沒有回應，請重試");
-            return;
+            console.error("❌ raw is null");
+            throw new Error("No Gemini response");
         }
 
         const data = safeParseJSON(raw);
 
-        if (!data) {
-            alert("AI 格式錯誤");
-            return;
-        }
+        console.log("🧪 PARSED RESULT:");
+        console.log(data);
 
-        const generated = Array.isArray(data) ? data : (data ? [data] : []);
+        console.log("🧪 TYPE CHECK:");
+        console.log("isArray:", Array.isArray(data));
+        console.log("keys:", data ? Object.keys(data) : null);
 
-        if (!generated?.length) {
-            alert("沒有生成題目");
-            return;
+        const generated = Array.isArray(data)
+            ? data
+            : (data?.questions ?? [data]);
+
+        console.log("📚 GENERATED QUESTIONS:");
+        console.table(generated);
+
+        if (!generated.length) {
+            throw new Error("Empty generated questions");
         }
 
         questions = generated;
         index = 0;
+
+        console.log("✅ STATE UPDATED:");
+        console.log("questions length:", questions.length);
 
         document.getElementById("loading-section")?.classList.add("d-none");
 
+        console.groupEnd();
+
         navigate("mc");
-        loadQuestion();
 
     } catch (err) {
-        console.error(err);
-        alert("系統錯誤，請重試");
-    }
+        console.error("💥 generateQuestions FAILED:", err);
 
-    console.log("===== Prompt =====");
-    console.log(prompt);
+        document.getElementById("loading-section")?.classList.add("d-none");
 
-    const raw =
-        await callGemini(prompt);
+        console.groupEnd();
 
-    // 看 Gemini 原始輸出
-    console.log(
-        "===== Gemini Raw ====="
-    );
-    console.log(raw);
+        alert("題目生成失敗");
 
-    const data =
-        safeParseJSON(raw);
-
-    // 看 parse 後結果
-    console.log(
-        "===== Parsed JSON ====="
-    );
-    console.log(data);
-
-    // 防止 Gemini 格式漂移
-    const generated =
-        Array.isArray(data)
-            ? data
-            : data?.questions;
-
-    if (
-        generated &&
-        generated.length > 0
-    ) {
-
-        questions = generated;
-        index = 0;
-
-        console.log(
-            "===== Questions ====="
-        );
-        console.table(questions);
-
-        document
-            .getElementById(
-                "loading-section"
-            )
-            ?.classList.add(
-                "d-none"
-            );
-
-        // 方案 A
-        // 自動進入教材
-        if (generated && generated.length > 0) {
-
-            questions = generated;
-            index = 0;
-
-            console.log("Questions ready:", questions);
-
-            document
-                .getElementById("loading-section")
-                ?.classList.add("d-none");
-
-            // ❗關鍵修正
-            document
-                .querySelectorAll(".page")
-                .forEach(p => p.classList.add("d-none"));
-
-            document
-                .getElementById("page-mc")
-                ?.classList.remove("d-none");
-
-            loadQuestion(); // ⭐強制渲染第一題
-        }
-
-    } else {
-
-        console.error(
-            "Gemini JSON 失敗"
-        );
-
-        console.error(
-            "raw:",
-            raw
-        );
-
-        console.error(
-            "parsed:",
-            data
-        );
-
-        alert(
-            "AI 題目生成失敗，請查看 Console"
-        );
+        // 🔥 fallback 很重要
+        navigate("pre-test");
     }
 }
 
