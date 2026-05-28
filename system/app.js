@@ -389,6 +389,143 @@ async function generateQuestions(){
     try {
         document.getElementById("loading-section")?.classList.remove("d-none");
 
+        const limit = initialDistance; // 根據錯誤程度調整題量，最多{initialDistance}題
+
+        const prompt = `
+        你是專業英語教學AI（Diagnostic Adaptive Tutor）。
+
+        # 📊 INPUT DATA
+
+        ## Expert Grid（標準能力）
+        ${JSON.stringify(teacherGrid)}
+
+        ## Student Grid（學生理解）
+        ${JSON.stringify(studentGrid)}
+
+        ## Diff Grid（錯誤強度）
+        ${JSON.stringify(diffGrid)}
+
+        ---
+
+        # 🧠 教學任務
+
+        你要做的是：
+
+        1. 找出學生最大錯誤維度（time/space/motion/relation）
+        2. 判斷錯誤類型：
+        - under-generalization（理解不足）
+        - over-generalization（過度泛化）
+        3. 用錯誤點設計介系詞干擾選項
+        4. 生成「診斷型題目」
+
+        ---
+
+        # 📌 feature 規則（重要）
+
+        feature 必須是：
+
+        「概念差異 + 介系詞對比 + 教學提示」
+
+        格式：
+
+        "motion vs space (to vs at): 區分動態移動與靜態位置"
+
+        ---
+
+        # 🧠 explanation 規則（超重要）
+
+        必須是「針對學生錯誤理解」，不能是定義。
+
+        必須包含：
+
+        - 為什麼錯
+        - 學生現在怎麼想
+        - 正確修正方式（白話）
+
+        例子：
+
+        "你可能把 TO 當成位置，但這題是在說移動方向，所以會容易選錯。"
+
+        ---
+
+        # 📦 output format（ONLY JSON）
+
+        🚨 OUTPUT RULE (STRICT):
+
+        You are a JSON generator.
+
+        You MUST follow ALL rules:
+
+        1. Output MUST start with "{" (no prefix text)
+        2. Output MUST NOT contain markdown
+        3. Output MUST NOT contain explanation outside JSON
+        4. Output MUST be valid JSON only
+        5. If you fail, the system will reject your output
+
+        最多 ${limit} 題：
+
+        {
+        "index": number,
+        "Question": string,
+        "Translation": string,
+        "feature": string,
+        "type": "base",
+
+        "A": "at",
+        "B": "on",
+        "C": "in",
+        "D": "to",
+
+        "answer": "A",
+
+        "A_score": number,
+        "B_score": number,
+        "C_score": number,
+        "D_score": number,
+
+        "explanation": {
+            "A": string,
+            "B": string,
+            "C": string,
+            "D": string
+        }
+        }
+
+        ---
+
+        # 🎯 scoring和題目數決定
+
+        題目數表示要覆蓋多少錯誤點，題目數愈高反映學生混淆點愈多，每一題會因應學生介系詞理解程度來調整。
+        分數表示修正程度，單題正確分數愈高反映該題對於修正英語專家的幫助程度愈高。
+
+        # 4️⃣ 分數原則
+
+        每題分數必須符合下方規則：
+
+        1. 你需要保證所有correct的分數相加等於${initialDistance}，並且錯誤選項分數要能區分學生的理解程度
+        2. 你需要根據學生情況去決定題目的作用從以設定分數
+        - 是不是學生典型錯誤?
+        - 錯誤程度?
+        - 學生理解的幫助程度?
+        - 會不會解決一個混淆點就可以大幅修正學生理解?
+        3. 自定義分數範圍
+        - correct >= 1.0（依修正價值決定具體）
+        - near miss >= 0 and < correct的分數（依學生理解程度決定具體）
+        - wrong plausible = 0 ~ -0.9 固定
+        - misconception = -1.0 固定
+
+        # 4️⃣ 出題數目及內容原則
+
+        每題必須：
+
+        1. 對應一個錯誤概念
+        2. 能修正一個 misunderstanding
+        3. 避免重複測同一錯誤
+        4. 從「最嚴重錯誤」開始修正
+        5. 題目數為覆蓋到學生的全部錯誤點的數量
+        6. 正確答案需平均分布在A/B/C/D
+        `;
+
         const raw = await callGemini(prompt);
 
         if (!raw) {
@@ -403,7 +540,7 @@ async function generateQuestions(){
             return;
         }
 
-        const generated = Array.isArray(data) ? data : data?.questions;
+        const generated = Array.isArray(data) ? data : (data ? [data] : []);
 
         if (!generated?.length) {
             alert("沒有生成題目");
@@ -422,143 +559,6 @@ async function generateQuestions(){
         console.error(err);
         alert("系統錯誤，請重試");
     }
-
-const limit = initialDistance; // 根據錯誤程度調整題量，最多{initialDistance}題
-
-const prompt = `
-你是專業英語教學AI（Diagnostic Adaptive Tutor）。
-
-# 📊 INPUT DATA
-
-## Expert Grid（標準能力）
-${JSON.stringify(teacherGrid)}
-
-## Student Grid（學生理解）
-${JSON.stringify(studentGrid)}
-
-## Diff Grid（錯誤強度）
-${JSON.stringify(diffGrid)}
-
----
-
-# 🧠 教學任務
-
-你要做的是：
-
-1. 找出學生最大錯誤維度（time/space/motion/relation）
-2. 判斷錯誤類型：
-   - under-generalization（理解不足）
-   - over-generalization（過度泛化）
-3. 用錯誤點設計介系詞干擾選項
-4. 生成「診斷型題目」
-
----
-
-# 📌 feature 規則（重要）
-
-feature 必須是：
-
-「概念差異 + 介系詞對比 + 教學提示」
-
-格式：
-
-"motion vs space (to vs at): 區分動態移動與靜態位置"
-
----
-
-# 🧠 explanation 規則（超重要）
-
-必須是「針對學生錯誤理解」，不能是定義。
-
-必須包含：
-
-- 為什麼錯
-- 學生現在怎麼想
-- 正確修正方式（白話）
-
-例子：
-
-"你可能把 TO 當成位置，但這題是在說移動方向，所以會容易選錯。"
-
----
-
-# 📦 output format（ONLY JSON）
-
-🚨 OUTPUT RULE (STRICT):
-
-You are a JSON generator.
-
-You MUST follow ALL rules:
-
-1. Output MUST start with "{" (no prefix text)
-2. Output MUST NOT contain markdown
-3. Output MUST NOT contain explanation outside JSON
-4. Output MUST be valid JSON only
-5. If you fail, the system will reject your output
-
-最多 ${limit} 題：
-
-{
-  "index": number,
-  "Question": string,
-  "Translation": string,
-  "feature": string,
-  "type": "base",
-
-  "A": "at",
-  "B": "on",
-  "C": "in",
-  "D": "to",
-
-  "answer": "A",
-
-  "A_score": number,
-  "B_score": number,
-  "C_score": number,
-  "D_score": number,
-
-  "explanation": {
-    "A": string,
-    "B": string,
-    "C": string,
-    "D": string
-  }
-}
-
----
-
-# 🎯 scoring和題目數決定
-
-題目數表示要覆蓋多少錯誤點，題目數愈高反映學生混淆點愈多，每一題會因應學生介系詞理解程度來調整。
-分數表示修正程度，單題正確分數愈高反映該題對於修正英語專家的幫助程度愈高。
-
-# 4️⃣ 分數原則
-
-每題分數必須符合下方規則：
-
-1. 你需要保證所有correct的分數相加等於${initialDistance}，並且錯誤選項分數要能區分學生的理解程度
-2. 你需要根據學生情況去決定題目的作用從以設定分數
-- 是不是學生典型錯誤?
-- 錯誤程度?
-- 學生理解的幫助程度?
-- 會不會解決一個混淆點就可以大幅修正學生理解?
-3. 自定義分數範圍
-- correct >= 1.0（依修正價值決定具體）
-- near miss >= 0 and < correct的分數（依學生理解程度決定具體）
-- wrong plausible = 0 ~ -0.9 固定
-- misconception = -1.0 固定
-
-# 4️⃣ 出題數目及內容原則
-
-每題必須：
-
-1. 對應一個錯誤概念
-2. 能修正一個 misunderstanding
-3. 避免重複測同一錯誤
-4. 從「最嚴重錯誤」開始修正
-5. 題目數為覆蓋到學生的全部錯誤點的數量
-6. 正確答案需平均分布在A/B/C/D
-`;
 
     console.log("===== Prompt =====");
     console.log(prompt);
