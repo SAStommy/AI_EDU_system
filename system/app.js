@@ -14,21 +14,38 @@ console.log("app.js loaded", {
 ========================= */
 
 async function callGemini(prompt) {
-    console.log("sending prompt:", prompt);
+    try {
+        console.log("sending prompt:", prompt);
 
-    const res = await fetch("/api/gemini", {
-        method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ prompt })
-    });
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 30000);
 
-    const data = await res.json();
+        const res = await fetch("/api/gemini", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ prompt }),
+            signal: controller.signal
+        });
 
-    console.log("API response:", data);
+        clearTimeout(timeout);
 
-    return data?.text || "";
+        if (!res.ok) {
+            console.error("API error:", await res.text());
+            return null;
+        }
+
+        const data = await res.json();
+
+        console.log("API response:", data);
+
+        return data?.text || null;
+
+    } catch (err) {
+        console.error("callGemini failed:", err);
+        return null;
+    }
 }
 
 /* =========================
@@ -94,36 +111,41 @@ function clamp1to5(el) {
 
 function safeParseJSON(text) {
     try {
-        // 1. 找第一個 [ 或 {
-        const startObj = text.indexOf("{");
-        const startArr = text.indexOf("[");
+        if (!text) return null;
 
-        let start;
+        // 1. 移除 code fence（更完整）
+        text = text
+            .replace(/```json/g, "")
+            .replace(/```/g, "")
+            .trim();
 
-        if (startObj === -1) start = startArr;
-        else if (startArr === -1) start = startObj;
-        else start = Math.min(startObj, startArr);
+        // 2. 找第一個 JSON 開始
+        const start = text.search(/[\{\[]/);
+        if (start === -1) return null;
 
-        if (start === -1) {
-            console.error("No JSON start found");
-            return null;
+        text = text.slice(start);
+
+        // 3. 找最後 JSON 結尾（用 stack-safe 思維）
+        let stack = 0;
+        let end = -1;
+
+        for (let i = 0; i < text.length; i++) {
+            if (text[i] === "{") stack++;
+            if (text[i] === "}") stack--;
+
+            if (stack === 0) {
+                end = i;
+                break;
+            }
         }
 
-        // 2. 從第一個 JSON 起切
-        let sliced = text.slice(start);
+        if (end === -1) {
+            // fallback array
+            end = text.lastIndexOf("]");
+            if (end === -1) end = text.lastIndexOf("}");
+        }
 
-        // 3. 去掉 ```（保險）
-        sliced = sliced.replace(/```/g, "").trim();
-
-        // 4. 找最後一個 } 或 ]
-        const endObj = sliced.lastIndexOf("}");
-        const endArr = sliced.lastIndexOf("]");
-
-        const end = Math.max(endObj, endArr);
-
-        if (end === -1) return null;
-
-        const jsonStr = sliced.slice(0, end + 1);
+        const jsonStr = text.slice(0, end + 1);
 
         return JSON.parse(jsonStr);
 
@@ -133,8 +155,6 @@ function safeParseJSON(text) {
         return null;
     }
 }
-
-
 
 /* =========================
    6. Navigation
@@ -365,6 +385,43 @@ async function submitPreTest() {
 ========================= */
 
 async function generateQuestions(){
+    
+    try {
+        document.getElementById("loading-section")?.classList.remove("d-none");
+
+        const raw = await callGemini(prompt);
+
+        if (!raw) {
+            alert("AI 沒有回應，請重試");
+            return;
+        }
+
+        const data = safeParseJSON(raw);
+
+        if (!data) {
+            alert("AI 格式錯誤");
+            return;
+        }
+
+        const generated = Array.isArray(data) ? data : data?.questions;
+
+        if (!generated?.length) {
+            alert("沒有生成題目");
+            return;
+        }
+
+        questions = generated;
+        index = 0;
+
+        document.getElementById("loading-section")?.classList.add("d-none");
+
+        navigate("mc");
+        loadQuestion();
+
+    } catch (err) {
+        console.error(err);
+        alert("系統錯誤，請重試");
+    }
 
 const limit = initialDistance; // 根據錯誤程度調整題量，最多{initialDistance}題
 
