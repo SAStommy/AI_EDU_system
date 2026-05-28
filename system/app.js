@@ -171,6 +171,33 @@ function navigate(page){
    7. Render Kelly Grid
 ========================= */
 
+const constructConfig = [
+    {
+        name: "時間跨度",
+        left: "[具體]",
+        right: "[廣泛]",
+        values: [1, 2, 4, 1, 5]
+    },
+    {
+        name: "空間範圍",
+        left: "[具體]",
+        right: "[廣泛]",
+        values: [1, 3, 5, 4, 1]
+    },
+    {
+        name: "動作度強",
+        left: "[靜態]",
+        right: "[動態]",
+        values: [1, 1, 1, 5, 1]
+    },
+    {
+        name: "對象關連",
+        left: "[直接]",
+        right: "[潛在]",
+        values: [1, 1, 1, 4, 5]
+    }
+];
+
 function renderPreTest() {
     const body =
         document.getElementById(
