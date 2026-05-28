@@ -966,7 +966,9 @@ async function finishExperiment(){
         postScore
     });
 
-    navigate("home");
+    resetAppState();
+
+    navigate("pre-test");
 }
 
 /* =========================
@@ -1036,4 +1038,25 @@ function resetOptionUI(){
 
     box.classList.add("d-none");
     box.classList.remove("alert-success", "alert-danger");
+}
+
+function resetAppState() {
+    console.log("🔄 resetting app state...");
+
+    // state
+    studentGrid = [];
+    diffGrid = [];
+    questions = [];
+    index = 0;
+    initialDistance = 0;
+    totalPossibleScore = 0;
+    earnedScore = 0;
+
+    // UI
+    document.querySelectorAll("input").forEach(i => i.value = "");
+    document.querySelectorAll(".page").forEach(p => p.classList.add("d-none"));
+
+    document.getElementById("loading-section")?.classList.add("d-none");
+
+    console.log("✅ reset done");
 }
