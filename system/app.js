@@ -180,11 +180,18 @@ function renderPreTest() {
     body.innerHTML = "";
 
     for (let i = 0; i < 4; i++) {
+
         const tr =
             document.createElement("tr");
 
+        const config =
+            constructConfig[i];
+
         tr.innerHTML =
-            `<td>構念 ${i + 1}</td>` +
+            `
+            <td>${config.name}</td>
+            <td>${config.left}</td>
+            ` +
             Array.from({ length: 5 })
                 .map((_, j) => `
                     <td>
@@ -195,11 +202,14 @@ function renderPreTest() {
                             type="number"
                             min="1"
                             max="5"
-                            value="3"
+                            value="${config.values[j]}"
                         />
                     </td>
                 `)
-                .join("");
+                .join("") +
+            `
+            <td>${config.right}</td>
+            `;
 
         body.appendChild(tr);
 
@@ -216,15 +226,26 @@ function renderPreTest() {
 }
 
 function renderPostTest() {
-    const body = document.getElementById("postTestGridBody");
+    const body =
+        document.getElementById(
+            "postTestGridBody"
+        );
 
     body.innerHTML = "";
 
     for (let i = 0; i < 4; i++) {
-        const tr = document.createElement("tr");
+
+        const tr =
+            document.createElement("tr");
+
+        const config =
+            constructConfig[i];
 
         tr.innerHTML =
-            `<td>構念 ${i + 1}</td>` +
+            `
+            <td>${config.name}</td>
+            <td>${config.left}</td>
+            ` +
             Array.from({ length: 5 })
                 .map((_, j) => `
                     <td>
@@ -235,11 +256,14 @@ function renderPostTest() {
                             type="number"
                             min="1"
                             max="5"
-                            value="3"
+                            value="${config.values[j]}"
                         />
                     </td>
                 `)
-                .join("");
+                .join("") +
+            `
+            <td>${config.right}</td>
+            `;
 
         body.appendChild(tr);
 
