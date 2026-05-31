@@ -1136,6 +1136,12 @@ function initApp(){
             nextQuestion
         );
 
+    document.getElementById("btn-finish")
+        ?.addEventListener("click", () => {
+            console.log("🔥 post-test finish clicked");
+            navigate("selfeff-post");
+        })    
+
     document.getElementById("btn-selfeff-pre")
         ?.addEventListener("click", () => {
 
@@ -1202,7 +1208,6 @@ function resetAppState() {
 
     // UI
     document.querySelectorAll("input").forEach(i => i.value = "");
-    document.querySelectorAll(".page").forEach(p => p.classList.add("d-none"));
 
     document.getElementById("loading-section")?.classList.add("d-none");
 
