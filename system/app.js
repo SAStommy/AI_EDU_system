@@ -889,31 +889,22 @@ function loadQuestion() {
 ========================= */
 
 function updateProgress() {
+    if (!totalPossibleScore || totalPossibleScore <= 0) return;
 
     const progress = (earnedScore / totalPossibleScore) * 100;
-
     const p = Math.max(0, Math.min(100, progress));
 
-    const bar =
-        document.getElementById(
-            "student-progress-bar"
-        );
+    const bar = document.getElementById("student-progress-bar");
 
-    bar.style.width =
-        p + "%";
+    if (!bar) return;
 
-    bar.innerText =
-        p.toFixed(1) + "%";
+    bar.style.width = p + "%";
+    bar.innerText = p.toFixed(1) + "%";
 
     if (p >= 100) {
         setTimeout(() => {
-            alert(
-                "已完成學習，進入後測"
-            );
-
-            navigate(
-                "post-test"
-            );
+            alert("已完成學習，進入後測");
+            navigate("post-test");
         }, 700);
     }
 }
@@ -1000,17 +991,17 @@ async function check(choice){
 
 function nextQuestion(){
 
-    // ⭐只擋「最後一題 + AI還沒回來」
+    // ⭐ 如果 AI 還沒回來 → 卡住
     if (lastQuestionWaitingAI) {
-        console.log("⏳ waiting last question AI follow-up...");
-
+        console.log("⏳ waiting AI follow-up...");
         alert("正在生成補題，請稍候...");
         return;
     }
 
     index++;
 
-    if(index < window.mainQuestionLength){
+    // ⭐ 改成 questions.length，而不是 mainQuestionLength
+    if(index < questions.length){
         resetOptionUI();
         loadQuestion();
     }
@@ -1195,6 +1186,13 @@ function resetAppState() {
     earnedScore = 0;
 
     document.getElementById("loading-section")?.classList.add("d-none");
+
+    // ⭐ ADD THIS
+    const bar = document.getElementById("student-progress-bar");
+    if (bar) {
+        bar.style.width = "0%";
+        bar.innerText = "0%";
+    }
 }
 
 function validateSelfEfficacy(prefix) {
