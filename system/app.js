@@ -429,9 +429,7 @@ async function submitPreTest() {
         })
     });
 
-    //navigate("knowledge");
-    navigate("selfeff-pre");
-
+    navigate("knowledge");
     await generateQuestions();
 }
 
@@ -1079,15 +1077,10 @@ function initApp(){
 
     renderPreTest();
 
-    document
-        .getElementById(
-            "btn-start"
-        )
+    document.getElementById("btn-start")
         ?.addEventListener(
             "click",
-            ()=>navigate(
-                "pre-test"
-            )
+            ()=>navigate("selfeff-pre")
         );
 
     document
@@ -1119,14 +1112,14 @@ function initApp(){
 
     document.getElementById("btn-selfeff-pre")
         ?.addEventListener("click", () => {
+
             preSelfEfficacy = collectSelfEfficacy("pre");
             preSelfEfficacyTotal = preSelfEfficacy.total;
 
-            navigate("knowledge");
-            generateQuestions();
+            navigate("pre-test");
         });
 
-        document.getElementById("btn-selfeff-post")
+    document.getElementById("btn-selfeff-post")
         ?.addEventListener("click", finishExperiment);
 }
 
