@@ -33,3 +33,54 @@ body {
     font-weight: bold;
     transition: width 0.6s ease;
 }
+
+/* ===== 自我效能 option box ===== */
+.selfeff-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+
+    min-width: 140px;
+    padding: 14px 18px;
+
+    border: 2px solid #d0d0d0;
+    border-radius: 12px;
+
+    cursor: pointer;
+    user-select: none;
+
+    transition: all 0.2s ease;
+    background: white;
+}
+
+/* hover */
+.selfeff-option:hover {
+    border-color: #0d6efd;
+    background: #f3f8ff;
+}
+
+/* hide radio */
+.selfeff-option input {
+    display: none;
+}
+
+/* selected state */
+.selfeff-option input:checked + span {
+    color: white;
+    background: #0d6efd;
+}
+
+/* span 變成填滿區塊 */
+.selfeff-option span {
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+/* 當選到時讓整個 label 變色（重點） */
+.selfeff-option:has(input:checked) {
+    border-color: #0d6efd;
+    background: #0d6efd;
+    color: white;
+}

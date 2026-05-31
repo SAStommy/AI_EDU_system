@@ -451,13 +451,13 @@ function renderSelfEfficacy(prefix) {
         <div class="mb-3">
             <label class="form-label">${i + 1}. ${q}</label>
 
-            <div class="d-flex flex-column gap-1">
+            <div class="d-flex flex-row flex-wrap gap-3">
                 ${options.map(opt => `
-                    <label>
+                    <label class="selfeff-option">
                         <input type="radio"
-                               name="${prefix}-q${i+1}"
-                               value="${opt.v}">
-                        ${opt.t}
+                            name="${prefix}-q${i+1}"
+                            value="${opt.v}">
+                        <span>${opt.t}</span>
                     </label>
                 `).join("")}
             </div>
@@ -1113,6 +1113,13 @@ function initApp(){
     document.getElementById("btn-selfeff-pre")
         ?.addEventListener("click", () => {
 
+            const v = validateSelfEfficacy("pre");
+
+            if (!v.ok) {
+                alert(`還有第 ${v.missing} 題沒填完`);
+                return;
+            }
+
             preSelfEfficacy = collectSelfEfficacy("pre");
             preSelfEfficacyTotal = preSelfEfficacy.total;
 
@@ -1120,7 +1127,17 @@ function initApp(){
         });
 
     document.getElementById("btn-selfeff-post")
-        ?.addEventListener("click", finishExperiment);
+        ?.addEventListener("click", () => {
+
+            const v = validateSelfEfficacy("post");
+
+            if (!v.ok) {
+                alert(`還有第 ${v.missing} 題沒填完`);
+                return;
+            }
+
+            finishExperiment();
+        });
 }
 
 document.addEventListener(
@@ -1164,4 +1181,21 @@ function resetAppState() {
     document.getElementById("loading-section")?.classList.add("d-none");
 
     console.log("✅ reset done");
+}
+
+function validateSelfEfficacy(prefix) {
+    for (let i = 1; i <= 10; i++) {
+        const checked = document.querySelector(
+            `input[name="${prefix}-q${i}"]:checked`
+        );
+
+        if (!checked) {
+            return {
+                ok: false,
+                missing: i
+            };
+        }
+    }
+
+    return { ok: true };
 }
