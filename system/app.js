@@ -75,6 +75,16 @@ let totalPossibleScore = 0;
 let earnedScore = 0;
 
 /* =========================
+   Self-Efficacy
+========================= */
+
+let preSelfEfficacy = {};
+let postSelfEfficacy = {};
+
+let preSelfEfficacyTotal = 0;
+let postSelfEfficacyTotal = 0;
+
+/* =========================
    5. Utils
 ========================= */
 
@@ -89,6 +99,28 @@ function computeDiff(t, s) {
 function sum(grid) {
     return grid.flat()
         .reduce((a, b) => a + b, 0);
+}
+
+function collectSelfEfficacy(prefix) {
+
+    const result = {};
+    let total = 0;
+
+    for (let i = 1; i <= 10; i++) {
+
+        const checked = document.querySelector(
+            `input[name="${prefix}-q${i}"]:checked`
+        );
+
+        const value = Number(checked?.value || 0);
+
+        result[`Q${i}`] = value;
+        total += value;
+    }
+
+    result.total = total;
+
+    return result;
 }
 
 function clamp1to5(el) {
@@ -185,7 +217,23 @@ function navigate(page){
     if (page === "post-test") {
         renderPostTest();
     }
+
+    if (page === "selfeff-pre") {renderSelfEfficacy("pre");}
+    if (page === "selfeff-post") {renderSelfEfficacy("post");}
 }
+
+const selfEfficacyQuestions = [
+    "如果我盡力去做的話，我總是能夠解決問題的",
+    "即使別人反對我，我仍有辦法取得我所要的",
+    "對我來說，堅持理想和達成目標是輕而易舉的",
+    "我自信能有效地應付任何突如其來的事情",
+    "以我的才智，我定能應付意料之外的情況",
+    "如果我付出必要的努力，我一定能解決大多數的難題",
+    "我能冷靜地面對困難，因為我信賴自己處理問題的能力",
+    "面對一個難題時，我通常能找到幾個解決方法",
+    "有麻煩的時候，我通常能想到一些應付的方法",
+    "無論什麼事在我身上發生，我都能應付自如"
+];
 
 /* =========================
    7. Render Kelly Grid
@@ -332,6 +380,12 @@ function renderPostTest() {
 
 async function submitPreTest() {
 
+    preSelfEfficacy = collectSelfEfficacy("pre");
+
+    preSelfEfficacyTotal = preSelfEfficacy.total;
+
+    console.log("Pre Self-Efficacy", preSelfEfficacy);
+
     const inputs =
         document.querySelectorAll(
             ".pre-grid-input"
@@ -375,9 +429,42 @@ async function submitPreTest() {
         })
     });
 
-    navigate("knowledge");
+    //navigate("knowledge");
+    navigate("selfeff-pre");
 
     await generateQuestions();
+}
+
+/* =========================
+   Ex. 問卷調查render
+========================= */
+
+function renderSelfEfficacy(prefix) {
+    const container = document.getElementById(`selfeff-${prefix}-container`);
+
+    const options = [
+        { v: 1, t: "①完全不正確" },
+        { v: 2, t: "②有點正確" },
+        { v: 3, t: "③多數正確" },
+        { v: 4, t: "④完全正確" }
+    ];
+
+    container.innerHTML = selfEfficacyQuestions.map((q, i) => `
+        <div class="mb-3">
+            <label class="form-label">${i + 1}. ${q}</label>
+
+            <div class="d-flex flex-column gap-1">
+                ${options.map(opt => `
+                    <label>
+                        <input type="radio"
+                               name="${prefix}-q${i+1}"
+                               value="${opt.v}">
+                        ${opt.t}
+                    </label>
+                `).join("")}
+            </div>
+        </div>
+    `).join("");
 }
 
 /* =========================
@@ -918,6 +1005,12 @@ function nextQuestion(){
 
 async function finishExperiment(){
 
+    postSelfEfficacy = collectSelfEfficacy("post");
+
+    postSelfEfficacyTotal = postSelfEfficacy.total;
+
+    console.log("Post Self-Efficacy", postSelfEfficacy);
+
     const postInputs =
         document.querySelectorAll(
             ".post-grid-input"
@@ -937,23 +1030,30 @@ async function finishExperiment(){
             +i.value;
     });
 
-    const postDiff =
-        computeDiff(
-            teacherGrid,
-            postGrid
-        );
+    const postDiff = computeDiff(teacherGrid, postGrid);
 
-    const postScore =
-        sum(postDiff);
+    const postScore = sum(postDiff);
+
+    const payload = {
+        action: "update",
+        session_id: sessionId,
+        post_score: postScore,
+
+        pre_total: preSelfEfficacyTotal,
+        post_total: postSelfEfficacyTotal
+    };
+
+    for (let i = 1; i <= 10; i++) {
+        payload[`pre_Q${i}`] = preSelfEfficacy[`Q${i}`];
+        payload[`post_Q${i}`] = postSelfEfficacy[`Q${i}`];
+    }
+
+    console.log("payload:", payload);
 
     await fetch("/api/db", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-            action: "update",
-            session_id: sessionId,
-            post_score: postScore
-        })
+        body: JSON.stringify(payload)
     });
 
     alert(
@@ -968,7 +1068,7 @@ async function finishExperiment(){
 
     resetAppState();
 
-    navigate("pre-test");
+    navigate("selfeff-post");
 }
 
 /* =========================
@@ -1016,6 +1116,18 @@ function initApp(){
             "click",
             finishExperiment
         );
+
+    document.getElementById("btn-selfeff-pre")
+        ?.addEventListener("click", () => {
+            preSelfEfficacy = collectSelfEfficacy("pre");
+            preSelfEfficacyTotal = preSelfEfficacy.total;
+
+            navigate("knowledge");
+            generateQuestions();
+        });
+
+        document.getElementById("btn-selfeff-post")
+        ?.addEventListener("click", finishExperiment);
 }
 
 document.addEventListener(
