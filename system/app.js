@@ -84,6 +84,53 @@ let postSelfEfficacy = {};
 let preSelfEfficacyTotal = 0;
 let postSelfEfficacyTotal = 0;
 
+const fallbackQuestions = [
+    {
+        index: 0,
+        Question: "The book is ___ the table.",
+        Translation: "書在桌子上。",
+        feature: "space (on vs in): 靜態位置判斷",
+        type: "base",
+        A: "on",
+        B: "in",
+        C: "at",
+        D: "to",
+        answer: "A",
+        A_score: 2,
+        B_score: -1,
+        C_score: 0,
+        D_score: 0,
+        explanation: {
+            A: "正確，on 表示在表面上",
+            B: "in 是內部概念，這裡錯誤",
+            C: "at 是點狀位置，不適用",
+            D: "to 是方向，不是位置"
+        }
+    },
+    {
+        index: 1,
+        Question: "She arrived ___ the airport.",
+        Translation: "她到達機場。",
+        feature: "motion (to vs at): 到達概念",
+        type: "base",
+        A: "at",
+        B: "on",
+        C: "in",
+        D: "to",
+        answer: "A",
+        A_score: 2,
+        B_score: -1,
+        C_score: 0,
+        D_score: 0,
+        explanation: {
+            A: "arrive at + 地點",
+            B: "on 不用於機場",
+            C: "in 是內部空間，不適合",
+            D: "to 不接 arrive"
+        }
+    }
+];
+
 /* =========================
    5. Utils
 ========================= */
@@ -613,60 +660,34 @@ async function generateQuestions() {
 
     document.getElementById("loading-section")?.classList.remove("d-none");
 
+    let generated;
+
     try {
-        const raw = await callGemini(prompt);
 
-        console.log("📦 RAW FROM GEMINI:");
-        console.log(raw);
+        generated = await callGeminiWithRetry(prompt, 2);
 
-        if (!raw) {
-            console.error("❌ raw is null");
-            throw new Error("No Gemini response");
-        }
-
-        const data = safeParseJSON(raw);
-
-        console.log("🧪 PARSED RESULT:");
-        console.log(data);
-
-        console.log("🧪 TYPE CHECK:");
-        console.log("isArray:", Array.isArray(data));
-        console.log("keys:", data ? Object.keys(data) : null);
-
-        const generated = Array.isArray(data)
-            ? data
-            : (data?.questions ?? [data]);
-
-        console.log("📚 GENERATED QUESTIONS:");
-        console.table(generated);
-
-        if (!generated.length) {
-            throw new Error("Empty generated questions");
-        }
+        console.log("📚 GENERATED QUESTIONS:", generated);
 
         questions = generated;
         index = 0;
 
-        console.log("✅ STATE UPDATED:");
-        console.log("questions length:", questions.length);
-
         document.getElementById("loading-section")?.classList.add("d-none");
-
-        console.groupEnd();
 
         navigate("mc");
 
     } catch (err) {
-        console.error("💥 generateQuestions FAILED:", err);
+
+        console.error("💥 ALL AI FAIL → USING FALLBACK:", err);
+
+        // 🔥 fallback
+        questions = fallbackQuestions;
+        index = 0;
 
         document.getElementById("loading-section")?.classList.add("d-none");
 
-        console.groupEnd();
+        alert("AI暫時失敗，已切換備用題庫");
 
-        alert("題目生成失敗");
-
-        // 🔥 fallback 很重要
-        navigate("pre-test");
+        navigate("mc");
     }
 }
 
@@ -1192,4 +1213,36 @@ function validateSelfEfficacy(prefix) {
     }
 
     return { ok: true };
+}
+
+async function callGeminiWithRetry(prompt, maxRetry = 2) {
+    let lastError = null;
+
+    for (let i = 0; i <= maxRetry; i++) {
+        try {
+            console.log(`🧠 Gemini attempt ${i + 1}`);
+
+            const raw = await callGemini(prompt);
+
+            if (!raw) throw new Error("empty response");
+
+            const data = safeParseJSON(raw);
+
+            if (!data) throw new Error("json parse failed");
+
+            const generated = Array.isArray(data)
+                ? data
+                : (data?.questions ?? []);
+
+            if (!generated.length) throw new Error("empty questions");
+
+            return generated; // ✅ success
+
+        } catch (err) {
+            console.warn(`❌ attempt ${i + 1} failed:`, err);
+            lastError = err;
+        }
+    }
+
+    throw lastError;
 }
