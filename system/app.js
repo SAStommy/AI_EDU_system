@@ -425,7 +425,8 @@ async function submitPreTest() {
         body: JSON.stringify({
             action: "create",
             session_id: sessionId,
-            pre_score: initialDistance
+            pre_score: initialDistance,
+            pre_total: preSelfEfficacyTotal
         })
     });
 
@@ -441,10 +442,10 @@ function renderSelfEfficacy(prefix) {
     const container = document.getElementById(`selfeff-${prefix}-container`);
 
     const options = [
-        { v: 1, t: "①完全不正確" },
-        { v: 2, t: "②有點正確" },
-        { v: 3, t: "③多數正確" },
-        { v: 4, t: "④完全正確" }
+        { v: 1, t: "完全不正確" },
+        { v: 2, t: "有點正確" },
+        { v: 3, t: "多數正確" },
+        { v: 4, t: "完全正確" }
     ];
 
     container.innerHTML = selfEfficacyQuestions.map((q, i) => `
@@ -1035,6 +1036,8 @@ async function finishExperiment(){
     const payload = {
         action: "update",
         session_id: sessionId,
+
+        pre_score: initialDistance,   // ⭐補這個
         post_score: postScore,
 
         pre_total: preSelfEfficacyTotal,
@@ -1066,7 +1069,7 @@ async function finishExperiment(){
 
     resetAppState();
 
-    navigate("selfeff-post");
+    navigate("home");
 }
 
 /* =========================
@@ -1099,15 +1102,6 @@ function initApp(){
         ?.addEventListener(
             "click",
             nextQuestion
-        );
-
-    document
-        .getElementById(
-            "btn-finish"
-        )
-        ?.addEventListener(
-            "click",
-            finishExperiment
         );
 
     document.getElementById("btn-selfeff-pre")
