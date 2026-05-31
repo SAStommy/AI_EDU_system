@@ -671,6 +671,9 @@ async function generateQuestions() {
         questions = generated;
         index = 0;
 
+        // ⭐ FIX：鎖定初始題數（避免 follow-up 影響 length）
+        window.fixedQuestionLength = generated.length;
+
         document.getElementById("loading-section")?.classList.add("d-none");
 
         navigate("mc");
@@ -1010,13 +1013,20 @@ function nextQuestion(){
 
     index++;
 
-    if(index < questions.length){
-        resetOptionUI();   // ⭐加這行
+    console.log("nextQuestion", {
+        index,
+        fixed: window.fixedQuestionLength,
+        currentLength: questions.length
+    });
+
+    // ⭐ FIX：用固定長度，而不是 dynamic array length
+    if(index < window.fixedQuestionLength){
+        resetOptionUI();
         loadQuestion();
     }
     else{
-        //generateQuestions(); //重新做一次題目
-        navigate("post-test"); // 或結束學習
+        console.log("➡️ reach end → post-test");
+        navigate("post-test");
     }
 }
 
