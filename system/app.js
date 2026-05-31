@@ -70,7 +70,7 @@ let index = 0;
 
 let totalPossibleScore = 0;
 let earnedScore = 0;
-let extendSession = false;
+let lastQuestionWaitingAI = false;
 
 /* =========================
    Self-Efficacy
