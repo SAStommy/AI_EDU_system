@@ -70,6 +70,7 @@ let index = 0;
 
 let totalPossibleScore = 0;
 let earnedScore = 0;
+let extendSession = false;
 
 /* =========================
    Self-Efficacy
@@ -652,8 +653,7 @@ async function generateQuestions() {
         questions = generated;
         index = 0;
 
-        // ⭐ FIX：鎖定初始題數（避免 follow-up 影響 length）
-        window.fixedQuestionLength = generated.length;
+        window.mainQuestionLength = generated.length;
 
         document.getElementById("loading-section")?.classList.add("d-none");
 
@@ -804,6 +804,7 @@ ${q.answer}
     });
 
     console.log("follow-up added:", data.length);
+    lastQuestionWaitingAI = false; // ⭐關鍵：解除
 }
 
 /* =========================
@@ -981,6 +982,13 @@ async function check(choice){
     // =========================
     // ⭐ 4. follow-up
     // =========================
+    const isLastMainQuestion =
+        index === window.mainQuestionLength - 1;
+
+    if (!correct && isLastMainQuestion) {
+        lastQuestionWaitingAI = true; // ⭐只針對最後一題
+    }
+
     if (!correct) {
         await addFollowUp(q, choice);
     }
@@ -992,21 +1000,21 @@ async function check(choice){
 
 function nextQuestion(){
 
+    // ⭐只擋「最後一題 + AI還沒回來」
+    if (lastQuestionWaitingAI) {
+        console.log("⏳ waiting last question AI follow-up...");
+
+        alert("正在生成補題，請稍候...");
+        return;
+    }
+
     index++;
 
-    console.log("nextQuestion", {
-        index,
-        fixed: window.fixedQuestionLength,
-        currentLength: questions.length
-    });
-
-    // ⭐ FIX：用固定長度，而不是 dynamic array length
-    if(index < window.fixedQuestionLength){
+    if(index < window.mainQuestionLength){
         resetOptionUI();
         loadQuestion();
     }
     else{
-        console.log("➡️ reach end → post-test");
         navigate("post-test");
     }
 }
