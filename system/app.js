@@ -18,7 +18,6 @@ async function callGemini(prompt) {
         console.log("sending prompt:", prompt);
 
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 30000);
 
         const res = await fetch("/api/gemini", {
             method: "POST",
@@ -28,8 +27,6 @@ async function callGemini(prompt) {
             body: JSON.stringify({ prompt }),
             signal: controller.signal
         });
-
-        clearTimeout(timeout);
 
         if (!res.ok) {
             console.error("API error:", await res.text());
@@ -192,41 +189,25 @@ function safeParseJSON(text) {
     try {
         if (!text) return null;
 
-        // 1. 移除 code fence（更完整）
         text = text
             .replace(/```json/g, "")
             .replace(/```/g, "")
             .trim();
 
-        // 2. 找第一個 JSON 開始
-        const start = text.search(/[\{\[]/);
+        const startObj = text.indexOf("{");
+        const startArr = text.indexOf("[");
+
+        let start = -1;
+
+        if (startArr === -1) start = startObj;
+        else if (startObj === -1) start = startArr;
+        else start = Math.min(startObj, startArr);
+
         if (start === -1) return null;
 
         text = text.slice(start);
 
-        // 3. 找最後 JSON 結尾（用 stack-safe 思維）
-        let stack = 0;
-        let end = -1;
-
-        for (let i = 0; i < text.length; i++) {
-            if (text[i] === "{") stack++;
-            if (text[i] === "}") stack--;
-
-            if (stack === 0) {
-                end = i;
-                break;
-            }
-        }
-
-        if (end === -1) {
-            // fallback array
-            end = text.lastIndexOf("]");
-            if (end === -1) end = text.lastIndexOf("}");
-        }
-
-        const jsonStr = text.slice(0, end + 1);
-
-        return JSON.parse(jsonStr);
+        return JSON.parse(text);
 
     } catch (e) {
         console.error("JSON parse error:", e);
@@ -1197,7 +1178,6 @@ function resetOptionUI(){
 function resetAppState() {
     console.log("🔄 resetting app state...");
 
-    // state
     studentGrid = [];
     diffGrid = [];
     questions = [];
@@ -1206,12 +1186,7 @@ function resetAppState() {
     totalPossibleScore = 0;
     earnedScore = 0;
 
-    // UI
-    document.querySelectorAll("input").forEach(i => i.value = "");
-
     document.getElementById("loading-section")?.classList.add("d-none");
-
-    console.log("✅ reset done");
 }
 
 function validateSelfEfficacy(prefix) {
@@ -1270,6 +1245,9 @@ async function callGeminiWithRetry(prompt, maxRetry = 2) {
                 q.Question &&
                 q.answer
             );
+
+            console.log("normalized data:", data);
+            console.log("generated:", generated);
 
             if (!generated.length) {
                 throw new Error("empty questions after normalization");
