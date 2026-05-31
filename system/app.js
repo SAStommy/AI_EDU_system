@@ -660,7 +660,7 @@ async function generateQuestions() {
 
     document.getElementById("loading-section")?.classList.remove("d-none");
 
-    let generated;
+    let generated = [];
 
     try {
 
@@ -684,6 +684,7 @@ async function generateQuestions() {
         index = 0;
 
         document.getElementById("loading-section")?.classList.add("d-none");
+        generated = fallbackQuestions;
 
         alert("AI暫時失敗，已切換備用題庫");
 
@@ -1230,13 +1231,36 @@ async function callGeminiWithRetry(prompt, maxRetry = 2) {
 
             if (!data) throw new Error("json parse failed");
 
-            const generated = Array.isArray(data)
-                ? data
-                : (data?.questions ?? []);
+            // =========================
+            // ⭐ FIX 1: normalize output
+            // =========================
+            let generated;
 
-            if (!generated.length) throw new Error("empty questions");
+            if (Array.isArray(data)) {
+                generated = data;
+            } else if (Array.isArray(data?.questions)) {
+                generated = data.questions;
+            } else if (typeof data === "object") {
+                // ⭐ single object → wrap成 array
+                generated = [data];
+            } else {
+                generated = [];
+            }
 
-            return generated; // ✅ success
+            // =========================
+            // ⭐ FIX 2: filter invalid
+            // =========================
+            generated = generated.filter(q =>
+                q &&
+                q.Question &&
+                q.answer
+            );
+
+            if (!generated.length) {
+                throw new Error("empty questions after normalization");
+            }
+
+            return generated;
 
         } catch (err) {
             console.warn(`❌ attempt ${i + 1} failed:`, err);
