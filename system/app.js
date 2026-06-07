@@ -285,7 +285,7 @@ const constructConfig = [
         name: "動作強度(Action Intensity)",
         left: "[靜態](static)",
         right: "[動態](dynamic)",
-        values: [3,3,3,3,3][1, 1, 1, 5, 1]
+        values: [3,3,3,3,3]//[1, 1, 1, 5, 1]
     },
     {
         name: "對象關連(Object Connection)",
