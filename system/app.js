@@ -273,25 +273,25 @@ const constructConfig = [
         name: "時間跨度(Time Span)",
         left: "[具體](specific)",
         right: "[廣泛](widely)",
-        values: [1, 2, 4, 1, 5]//[3,3,3,3,3]//[1, 2, 4, 1, 5]
+        values: [3,3,3,3,3]//[1, 2, 4, 1, 5]
     },
     {
         name: "空間範圍(Space Range)",
         left: "[具體](specific)",
         right: "[廣泛](widely)",
-        values: [1, 3, 5, 4, 1]//[3,3,3,3,3]//[1, 3, 5, 4, 1]
+        values: [3,3,3,3,3]//[1, 3, 5, 4, 1]
     },
     {
         name: "動作強度(Action Intensity)",
         left: "[靜態](static)",
         right: "[動態](dynamic)",
-        values: [1, 1, 1, 5, 1]//[3,3,3,3,3][1, 1, 1, 5, 1]
+        values: [3,3,3,3,3][1, 1, 1, 5, 1]
     },
     {
         name: "對象關連(Object Connection)",
         left: "[直接](direct)",
         right: "[潛在](latent)",
-        values: [1, 1, 1, 4, 5]//[3,3,3,3,3]//[1, 1, 1, 4, 5]
+        values: [3,3,3,3,3]//[1, 1, 1, 4, 5]
     }
 ];
 
